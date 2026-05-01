@@ -1,25 +1,40 @@
-import { ThemeIcon, TreeItem, TreeItemCollapsibleState, WorkspaceFolder } from "vscode";
-import { act } from "../../extension";
+import {
+    ThemeIcon,
+    TreeItem,
+    TreeItemCollapsibleState,
+    WorkspaceFolder,
+} from "vscode";
+import { ConfigurationManager } from "../../configurationManager";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
-import WorkflowTreeItem from "./workflow";
+import ProjectDirectoryWorkflowsTreeItem from "./projectDirectoryWorkflows";
 
-export default class WorkspaceFolderWorkflowsTreeItem extends TreeItem implements GithubLocalActionsTreeItem {
-    static contextValue = 'githubLocalActions.workspaceFolderWorkflows';
+export default class WorkspaceFolderWorkflowsTreeItem
+    extends TreeItem
+    implements GithubLocalActionsTreeItem
+{
+    static contextValue = "githubLocalActions.workspaceFolderWorkflows";
 
     constructor(public workspaceFolder: WorkspaceFolder) {
         super(workspaceFolder.name, TreeItemCollapsibleState.Collapsed);
+
         this.contextValue = WorkspaceFolderWorkflowsTreeItem.contextValue;
-        this.iconPath = new ThemeIcon('folder');
+        this.iconPath = new ThemeIcon("root-folder");
+        this.description = workspaceFolder.uri.fsPath;
+        this.tooltip =
+            `Workspace: ${workspaceFolder.name}\n` +
+            `Path: ${workspaceFolder.uri.fsPath}`;
     }
 
     async getChildren(): Promise<GithubLocalActionsTreeItem[]> {
-        const items: GithubLocalActionsTreeItem[] = [];
-
-        const workflows = await act.workflowsManager.getWorkflows(this.workspaceFolder);
-        for (const workflow of workflows) {
-            items.push(new WorkflowTreeItem(this.workspaceFolder, workflow));
-        }
-
-        return items.sort((a, b) => a.label!.toString().localeCompare(b.label!.toString()));
+        return ConfigurationManager.getResolvedProjectDirectories(
+            this.workspaceFolder,
+        ).map(
+            projectDirectory =>
+                new ProjectDirectoryWorkflowsTreeItem(
+                    projectDirectory.workspaceFolder,
+                    projectDirectory.projectDirectory,
+                    projectDirectory.projectPath,
+                ),
+        );
     }
 }

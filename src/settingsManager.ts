@@ -4,6 +4,7 @@ import { act } from "./extension";
 import { GitHubManager } from "./githubManager";
 import { SecretManager } from "./secretManager";
 import { StorageKey, StorageManager } from "./storageManager";
+import { Workflow } from "./workflowsManager";
 
 export interface Settings {
     secrets: Setting[];
@@ -59,6 +60,7 @@ export class SettingsManager {
     storageManager: StorageManager;
     secretManager: SecretManager;
     githubManager: GitHubManager;
+
     static secretsRegExp: RegExp = /\${{\s*secrets\.(.*?)\s*}}/g;
     static variablesRegExp: RegExp = /\${{\s*vars\.(.*?)(?:\s*==\s*(.*?))?\s*}}/g;
     static inputsRegExp: RegExp = /\${{\s*(?:inputs|github\.event\.inputs)\.(.*?)(?:\s*==\s*(.*?))?\s*}}/g;
@@ -81,76 +83,87 @@ export class SettingsManager {
                 mode: Mode.manual
             }
         ];
-        const secrets = (await this.getSetting(workspaceFolder, SettingsManager.secretsRegExp, StorageKey.Secrets, true, Visibility.hide, defaultSecrets)).filter(secret => !isUserSelected || (secret.selected && (secret.value || secret.mode === Mode.generate)));
-        const secretFiles = (await this.getCustomSettings(workspaceFolder, StorageKey.SecretFiles)).filter(secretFile => !isUserSelected || secretFile.selected);
-        const variables = (await this.getSetting(workspaceFolder, SettingsManager.variablesRegExp, StorageKey.Variables, false, Visibility.show)).filter(variable => !isUserSelected || (variable.selected && variable.value));
-        const variableFiles = (await this.getCustomSettings(workspaceFolder, StorageKey.VariableFiles)).filter(variableFile => !isUserSelected || variableFile.selected);
-        const inputs = (await this.getSetting(workspaceFolder, SettingsManager.inputsRegExp, StorageKey.Inputs, false, Visibility.show)).filter(input => !isUserSelected || (input.selected && input.value));
-        const inputFiles = (await this.getCustomSettings(workspaceFolder, StorageKey.InputFiles)).filter(inputFile => !isUserSelected || inputFile.selected);
-        const runners = (await this.getSetting(workspaceFolder, SettingsManager.runnersRegExp, StorageKey.Runners, false, Visibility.show)).filter(runner => !isUserSelected || (runner.selected && runner.value));
-        const payloadFiles = (await this.getCustomSettings(workspaceFolder, StorageKey.PayloadFiles)).filter(payloadFile => !isUserSelected || payloadFile.selected);
-        const options = (await this.getCustomSettings(workspaceFolder, StorageKey.Options)).filter(option => !isUserSelected || (option.selected && (option.path || option.notEditable)));
-        // const environments = await this.getEnvironments(workspaceFolder);
+
+        // 关键优化：workflow 只加载一次；其它 storage 读取并行执行。
+        const workflows = await act.workflowsManager.getWorkflows(workspaceFolder);
+
+        const [
+            secrets,
+            secretFiles,
+            variables,
+            variableFiles,
+            inputs,
+            inputFiles,
+            runners,
+            payloadFiles,
+            options,
+        ] = await Promise.all([
+            this.getSetting(workspaceFolder, workflows, SettingsManager.secretsRegExp, StorageKey.Secrets, true, Visibility.hide, defaultSecrets),
+            this.getCustomSettings(workspaceFolder, StorageKey.SecretFiles),
+            this.getSetting(workspaceFolder, workflows, SettingsManager.variablesRegExp, StorageKey.Variables, false, Visibility.show),
+            this.getCustomSettings(workspaceFolder, StorageKey.VariableFiles),
+            this.getSetting(workspaceFolder, workflows, SettingsManager.inputsRegExp, StorageKey.Inputs, false, Visibility.show),
+            this.getCustomSettings(workspaceFolder, StorageKey.InputFiles),
+            this.getSetting(workspaceFolder, workflows, SettingsManager.runnersRegExp, StorageKey.Runners, false, Visibility.show),
+            this.getCustomSettings(workspaceFolder, StorageKey.PayloadFiles),
+            this.getCustomSettings(workspaceFolder, StorageKey.Options),
+        ]);
 
         return {
-            secrets: secrets,
-            secretFiles: secretFiles,
-            variables: variables,
-            variableFiles: variableFiles,
-            inputs: inputs,
-            inputFiles: inputFiles,
-            runners: runners,
-            payloadFiles: payloadFiles,
-            options: options,
-            // environments: environments
+            secrets: secrets.filter(secret => !isUserSelected || (secret.selected && (secret.value || secret.mode === Mode.generate))),
+            secretFiles: secretFiles.filter(secretFile => !isUserSelected || secretFile.selected),
+            variables: variables.filter(variable => !isUserSelected || (variable.selected && variable.value)),
+            variableFiles: variableFiles.filter(variableFile => !isUserSelected || variableFile.selected),
+            inputs: inputs.filter(input => !isUserSelected || (input.selected && input.value)),
+            inputFiles: inputFiles.filter(inputFile => !isUserSelected || inputFile.selected),
+            runners: runners.filter(runner => !isUserSelected || (runner.selected && runner.value)),
+            payloadFiles: payloadFiles.filter(payloadFile => !isUserSelected || payloadFile.selected),
+            options: options.filter(option => !isUserSelected || (option.selected && (option.path || option.notEditable))),
+            // environments: await this.getEnvironments(workspaceFolder, workflows)
         };
     }
 
-    async getSetting(workspaceFolder: WorkspaceFolder, regExp: RegExp, storageKey: StorageKey, password: boolean, visible: Visibility, defaultSettings: Setting[] = []): Promise<Setting[]> {
-        const settings: Setting[] = defaultSettings;
-
-        const workflows = await act.workflowsManager.getWorkflows(workspaceFolder);
-        for (const workflow of workflows) {
-            if (!workflow.fileContent) {
-                continue;
-            }
-
-            const workflowSettings = this.findInWorkflow(workflow.fileContent, regExp, password, visible);
-            for (const workflowSetting of workflowSettings) {
-                const existingSetting = settings.find(setting => setting.key === workflowSetting.key);
-                if (!existingSetting) {
-                    settings.push(workflowSetting);
-                }
-            }
-        }
+    async getSetting(
+        workspaceFolder: WorkspaceFolder,
+        workflows: Workflow[],
+        regExp: RegExp,
+        storageKey: StorageKey,
+        password: boolean,
+        visible: Visibility,
+        defaultSettings: Setting[] = []
+    ): Promise<Setting[]> {
+        const settings = this.dedupeSettings([
+            ...defaultSettings.map(setting => ({ ...setting })),
+            ...this.findSettingsInWorkflows(workflows, regExp, password, visible),
+        ]);
 
         const existingSettings = await this.storageManager.get<{ [path: string]: Setting[] }>(storageKey) || {};
-        if (existingSettings[workspaceFolder.uri.fsPath]) {
-            for (const [index, setting] of settings.entries()) {
-                const existingSetting = existingSettings[workspaceFolder.uri.fsPath].find(existingSetting => existingSetting.key === setting.key);
-                if (existingSetting) {
-                    let value: string;
-                    if (storageKey === StorageKey.Secrets) {
-                        value = await this.secretManager.get(workspaceFolder, storageKey, setting.key) || "";
-                    } else {
-                        value = existingSetting.value;
-                    }
+        const workspaceSettings = existingSettings[workspaceFolder.uri.fsPath] || [];
 
-                    settings[index] = {
-                        key: setting.key,
-                        value: value,
-                        password: existingSetting.password,
-                        selected: existingSetting.selected,
-                        visible: existingSetting.visible,
-                        mode: existingSetting.mode || Mode.manual
-                    };
-                }
-            }
+        if (workspaceSettings.length === 0) {
+            return settings;
         }
-        existingSettings[workspaceFolder.uri.fsPath] = settings;
-        await this.storageManager.update(storageKey, existingSettings);
 
-        return settings;
+        // 只对当前已发现的 setting 做 merge，不在读取时写回 storage，避免 refresh 触发写放大。
+        return Promise.all(settings.map(async setting => {
+            const existingSetting = workspaceSettings.find(item => item.key === setting.key);
+            if (!existingSetting) {
+                return setting;
+            }
+
+            const value = storageKey === StorageKey.Secrets
+                ? await this.secretManager.get(workspaceFolder, storageKey, setting.key) || ''
+                : existingSetting.value;
+
+            return {
+                key: setting.key,
+                value,
+                password: existingSetting.password,
+                selected: existingSetting.selected,
+                visible: existingSetting.visible,
+                mode: existingSetting.mode || Mode.manual,
+            };
+        }));
     }
 
     async getCustomSettings(workspaceFolder: WorkspaceFolder, storageKey: StorageKey): Promise<CustomSetting[]> {
@@ -158,11 +171,11 @@ export class SettingsManager {
         return existingCustomSettings[workspaceFolder.uri.fsPath] || [];
     }
 
-    async getEnvironments(workspaceFolder: WorkspaceFolder): Promise<Setting[]> {
+    async getEnvironments(workspaceFolder: WorkspaceFolder, workflows?: Workflow[]): Promise<Setting[]> {
         const environments: Setting[] = [];
+        const resolvedWorkflows = workflows || await act.workflowsManager.getWorkflows(workspaceFolder);
 
-        const workflows = await act.workflowsManager.getWorkflows(workspaceFolder);
-        for (const workflow of workflows) {
+        for (const workflow of resolvedWorkflows) {
             if (!workflow.yaml) {
                 continue;
             }
@@ -212,7 +225,7 @@ export class SettingsManager {
         const settingFilesPaths = (await act.settingsManager.getCustomSettings(workspaceFolder, storageKey)).map(settingFile => settingFile.path);
         const existingSettingFileNames: string[] = [];
 
-        for await (const uri of settingFilesUris) {
+        for (const uri of settingFilesUris) {
             const settingFileName = path.parse(uri.fsPath).name;
 
             if (settingFilesPaths.includes(uri.fsPath)) {
@@ -285,38 +298,85 @@ export class SettingsManager {
 
     async editSetting(workspaceFolder: WorkspaceFolder, newSetting: Setting, storageKey: StorageKey) {
         const value = newSetting.value;
+        const settingToStore: Setting = { ...newSetting };
+
         if (storageKey === StorageKey.Secrets) {
-            newSetting.value = '';
+            // secret 值只进 SecretStorage，不写入普通 storage。
+            settingToStore.value = '';
         }
 
         const existingSettings = await this.storageManager.get<{ [path: string]: Setting[] }>(storageKey) || {};
         if (existingSettings[workspaceFolder.uri.fsPath]) {
-            const index = existingSettings[workspaceFolder.uri.fsPath].findIndex(setting => setting.key === newSetting.key);
+            const index = existingSettings[workspaceFolder.uri.fsPath].findIndex(setting => setting.key === settingToStore.key);
             if (index > -1) {
-                existingSettings[workspaceFolder.uri.fsPath][index] = newSetting;
+                existingSettings[workspaceFolder.uri.fsPath][index] = settingToStore;
             } else {
-                existingSettings[workspaceFolder.uri.fsPath].push(newSetting);
+                existingSettings[workspaceFolder.uri.fsPath].push(settingToStore);
             }
         } else {
-            existingSettings[workspaceFolder.uri.fsPath] = [newSetting];
+            existingSettings[workspaceFolder.uri.fsPath] = [settingToStore];
         }
 
         await this.storageManager.update(storageKey, existingSettings);
         if (storageKey === StorageKey.Secrets) {
             if (value === '') {
-                await this.secretManager.delete(workspaceFolder, storageKey, newSetting.key);
+                await this.secretManager.delete(workspaceFolder, storageKey, settingToStore.key);
             } else {
-                await this.secretManager.store(workspaceFolder, storageKey, newSetting.key, value);
+                await this.secretManager.store(workspaceFolder, storageKey, settingToStore.key, value);
             }
         }
     }
 
-    private findInWorkflow(content: string, regExp: RegExp, password: boolean, visible: Visibility) {
+    private findSettingsInWorkflows(workflows: Workflow[], regExp: RegExp, password: boolean, visible: Visibility): Setting[] {
+        const settings: Setting[] = [];
+
+        for (const workflow of workflows) {
+            if (!workflow.fileContent) {
+                continue;
+            }
+
+            settings.push(...this.findInWorkflow(workflow.fileContent, regExp, password, visible));
+        }
+
+        return settings;
+    }
+
+    private dedupeSettings(settings: Setting[]): Setting[] {
+        const seen = new Set<string>();
+        const result: Setting[] = [];
+
+        for (const setting of settings) {
+            if (seen.has(setting.key)) {
+                continue;
+            }
+
+            seen.add(setting.key);
+            result.push(setting);
+        }
+
+        return result;
+    }
+
+    private findInWorkflow(content: string, regExp: RegExp, password: boolean, visible: Visibility): Setting[] {
         const results: Setting[] = [];
 
-        const matches = content.matchAll(regExp);
+        // RegExp 是 static 单例，matchAll 会读取 lastIndex；这里复制一份，避免并发/重复调用状态污染。
+        const safeRegExp = new RegExp(regExp.source, regExp.flags);
+        const matches = content.matchAll(safeRegExp);
+
         for (const match of matches) {
-            results.push({ key: match[1], value: '', password: password, selected: false, visible: visible, mode: Mode.manual });
+            if (!match[1]) {
+                continue;
+            }
+
+            results.push({
+                key: match[1].trim(),
+                value: '',
+                password,
+                selected: false,
+                visible,
+                mode: Mode.manual
+            });
         }
 
         return results;

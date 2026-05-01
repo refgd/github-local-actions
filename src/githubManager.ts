@@ -174,7 +174,7 @@ export class GitHubManager {
                                 definition: {
                                     type: 'Authenticate with a GitHub host'
                                 },
-                                source: 'GitHub Local Actions',
+                                source: 'GitHub Locally Actions',
                                 scope: TaskScope.Workspace,
                                 isBackground: true,
                                 presentationOptions: {

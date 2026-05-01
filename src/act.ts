@@ -210,7 +210,7 @@ export class Act {
         // Setup automatic history view refreshing
         tasks.onDidStartTask(e => {
             const taskDefinition = e.execution.task.definition;
-            if (taskDefinition.type === 'GitHub Local Actions') {
+            if (taskDefinition.type === 'GitHub Locally Actions') {
                 this.runningTaskCount++;
 
                 if (!this.refreshInterval && this.runningTaskCount >= 0) {
@@ -222,7 +222,7 @@ export class Act {
         });
         tasks.onDidEndTask(e => {
             const taskDefinition = e.execution.task.definition;
-            if (taskDefinition.type === 'GitHub Local Actions') {
+            if (taskDefinition.type === 'GitHub Locally Actions') {
                 this.runningTaskCount--;
 
                 if (this.refreshInterval && this.runningTaskCount === 0) {
@@ -656,8 +656,14 @@ export class Act {
         //     return;
         // }
 
-        // Map to workspace folder
-        const workspaceFolder = workspace.getWorkspaceFolder(Uri.file(commandArgs.path));
+        // Map to workspace folder.
+        // projectDirectory can now be an absolute path outside the opened workspace.
+        // Use the workflow's stored workspaceFolder as the settings/task scope fallback,
+        // while act still runs with commandArgs.path as the actual working directory.
+        const workspaceFolder = workspace.getWorkspaceFolder(Uri.file(commandArgs.path)) ||
+            commandArgs.workflow.workspaceFolder ||
+            workspace.workspaceFolders?.[0];
+            
         if (!workspaceFolder) {
             window.showErrorMessage(`Failed to locate workspace folder for ${commandArgs.path}`);
             return;
@@ -701,14 +707,14 @@ export class Act {
             name: `${commandArgs.name} #${count}`,
             detail: `${commandArgs.name} #${count}`,
             definition: {
-                type: 'GitHub Local Actions',
+                type: 'GitHub Locally Actions',
                 commandArgs: commandArgs,
                 historyIndex: historyIndex,
                 count: count,
                 start: start,
                 logPath: logPath
             },
-            source: 'GitHub Local Actions',
+            source: 'GitHub Locally Actions',
             scope: workspaceFolder || TaskScope.Workspace,
             isBackground: true,
             presentationOptions: {
@@ -1036,7 +1042,7 @@ export class Act {
                     type: 'nektos/act installation',
                     ghCliInstall: command.includes('gh-act')
                 },
-                source: 'GitHub Local Actions',
+                source: 'GitHub Locally Actions',
                 scope: TaskScope.Workspace,
                 isBackground: true,
                 presentationOptions: {

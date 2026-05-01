@@ -49,76 +49,87 @@ export enum HistoryStatus {
 
 export class HistoryManager {
     storageManager: StorageManager;
-    private workspaceHistory: { [path: string]: History[] };
-
+    private workspaceHistory: { [path: string]: History[] } = {};
+    private syncPromise?: Promise<void>;
 
     constructor(storageManager: StorageManager) {
         this.storageManager = storageManager;
-        this.workspaceHistory = {};
-        this.syncHistory();
     }
 
-
     async getWorkspaceHistory() {
-        if (!this.workspaceHistory) {
-            await this.syncHistory();
-        }
-
+        await this.ensureSynced();
         return this.workspaceHistory;
     }
 
+    private async ensureSynced() {
+        if (!this.syncPromise) {
+            this.syncPromise = this.syncHistory();
+        }
+
+        await this.syncPromise;
+    }
+
     async syncHistory() {
-        const workspaceHistory = await this.storageManager.get<{ [path: string]: History[] }>(StorageKey.WorkspaceHistory) || {};
-        for (const [path, historyLogs] of Object.entries(workspaceHistory)) {
-            workspaceHistory[path] = historyLogs.map(history => {
-                history.jobs?.forEach((job, jobIndex) => {
-                    history.jobs![jobIndex].steps?.forEach((step, stepIndex) => {
-                        // Update status of all running steps
-                        if (step.status === HistoryStatus.Running) {
-                            history.jobs![jobIndex].steps![stepIndex].status = HistoryStatus.Cancelled;
+        const workspaceHistory =
+            await this.storageManager.get<{ [path: string]: History[] }>(StorageKey.WorkspaceHistory) || {};
+
+        let changed = false;
+
+        for (const historyLogs of Object.values(workspaceHistory)) {
+            for (const history of historyLogs) {
+                if (history.jobs) {
+                    for (const job of history.jobs) {
+                        if (job.steps) {
+                            for (const step of job.steps) {
+                                if (step.status === HistoryStatus.Running) {
+                                    step.status = HistoryStatus.Cancelled;
+                                    changed = true;
+                                }
+                            }
                         }
-                    });
 
-                    // Update status of all running jobs
-                    if (job.status === HistoryStatus.Running) {
-                        history.jobs![jobIndex].status = HistoryStatus.Cancelled;
+                        if (job.status === HistoryStatus.Running) {
+                            job.status = HistoryStatus.Cancelled;
+                            changed = true;
+                        }
                     }
-                });
-
-                // Update history status
-                if (history.status === HistoryStatus.Running) {
-                    history.status = HistoryStatus.Cancelled;
                 }
 
-                return history;
-            });
+                if (history.status === HistoryStatus.Running) {
+                    history.status = HistoryStatus.Cancelled;
+                    changed = true;
+                }
+            }
         }
+
         this.workspaceHistory = workspaceHistory;
-    };
 
-    async clearAll(workspaceFolder: WorkspaceFolder) {
-        await this.syncHistory();
-        const existingHistory = this.workspaceHistory?.[workspaceFolder.uri.fsPath] ?? [];
-        for (const history of existingHistory) {
-            try {
-                await workspace.fs.delete(Uri.file(history.logPath));
-            } catch (error: any) { }
+        if (changed) {
+            await this.storageManager.update(StorageKey.WorkspaceHistory, this.workspaceHistory);
         }
+    }
 
-        if (this.workspaceHistory) {
-            this.workspaceHistory[workspaceFolder.uri.fsPath] = [];
-        }
+    async clearAll(target: WorkspaceFolder | string) {
+        await this.ensureSynced();
+
+        const projectPath = typeof target === 'string' ? target : target.uri.fsPath;
+        const existingHistory = this.workspaceHistory[projectPath] ?? [];
+
+        await Promise.allSettled(
+            existingHistory.map(history => workspace.fs.delete(Uri.file(history.logPath)))
+        );
+
+        this.workspaceHistory[projectPath] = [];
+
         historyTreeDataProvider.refresh();
         await this.storageManager.update(StorageKey.WorkspaceHistory, this.workspaceHistory);
     }
 
     async viewOutput(history: History) {
-        await this.syncHistory();
-
         try {
             const document = await workspace.openTextDocument(history.logPath);
             await window.showTextDocument(document);
-        } catch (error: any) {
+        } catch {
             window.showErrorMessage(`${history.name} #${history.count} log file not found`);
         }
     }
@@ -132,16 +143,28 @@ export class HistoryManager {
     }
 
     async remove(history: History) {
-        await this.syncHistory();
-        const historyIndex = (this.workspaceHistory?.[history.commandArgs.path] ?? []).findIndex(workspaceHistory => workspaceHistory.index === history.index);
-        if (historyIndex > -1) {
-            (this.workspaceHistory?.[history.commandArgs.path] ?? []).splice(historyIndex, 1);
-            await this.storageManager.update(StorageKey.WorkspaceHistory, this.workspaceHistory);
+        await this.ensureSynced();
 
-            try {
-                await workspace.fs.delete(Uri.file(history.logPath));
-            } catch (error: any) { }
+        const projectPath = history.commandArgs.path;
+        const histories = this.workspaceHistory[projectPath] ?? [];
+        const historyIndex = histories.findIndex(item => item.index === history.index);
+
+        if (historyIndex === -1) {
+            return;
         }
+
+        histories.splice(historyIndex, 1);
+        this.workspaceHistory[projectPath] = histories;
+
+        await this.storageManager.update(StorageKey.WorkspaceHistory, this.workspaceHistory);
+
+        try {
+            await workspace.fs.delete(Uri.file(history.logPath));
+        } catch {
+            // Ignore missing log file.
+        }
+
+        historyTreeDataProvider.refresh();
     }
 
     static statusToIcon(status: HistoryStatus) {

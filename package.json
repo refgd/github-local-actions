@@ -1,26 +1,22 @@
 {
-  "name": "github-local-actions",
-  "displayName": "GitHub Local Actions",
+  "name": "github-locally-actions",
+  "displayName": "GitHub Locally Actions",
   "description": "Run your GitHub Actions locally!",
   "icon": "icon.png",
   "author": {
-    "name": "Sanjula Ganepola",
-    "url": "https://github.com/sanjulaganepola"
+    "name": "refgd",
+    "url": "https://github.com/refgd"
   },
-  "publisher": "SanjulaGanepola",
+  "publisher": "refgd",
   "license": "Apache-2.0",
-  "version": "1.2.5",
+  "version": "1.0.4",
   "repository": {
-    "url": "https://github.com/SanjulaGanepola/github-local-actions"
-  },
-  "homepage": "https://sanjulaganepola.github.io/github-local-actions-docs",
-  "bugs": {
-    "url": "https://github.com/SanjulaGanepola/github-local-actions/issues"
+    "url": "https://github.com/refgd/github-local-actions"
   },
   "keywords": [
     "GitHub Actions",
     "GitHub Actions Workflow",
-    "GitHub Local Actions"
+    "GitHub Locally Actions"
   ],
   "categories": [
     "Other"
@@ -40,7 +36,7 @@
       "activitybar": [
         {
           "id": "github-local-actions-container",
-          "title": "GitHub Local Actions",
+          "title": "GitHub Locally Actions",
           "icon": "$(robot)"
         }
       ]
@@ -133,259 +129,270 @@
     ],
     "commands": [
       {
-        "category": "GitHub Local Actions",
+        "category": "GitHub Locally Actions",
         "command": "githubLocalActions.refreshComponents",
         "title": "Refresh",
         "icon": "$(refresh)"
       },
       {
-        "category": "GitHub Local Actions",
+        "category": "GitHub Locally Actions",
         "command": "githubLocalActions.information",
         "title": "Information",
         "icon": "$(info)"
       },
       {
-        "category": "GitHub Local Actions",
+        "category": "GitHub Locally Actions",
         "command": "githubLocalActions.installComponent",
         "title": "Install",
         "icon": "$(desktop-download)"
       },
       {
-        "category": "GitHub Local Actions",
+        "category": "GitHub Locally Actions",
         "command": "githubLocalActions.startComponent",
         "title": "Start",
         "icon": "$(debug-start)"
       },
       {
-        "category": "GitHub Local Actions",
+        "category": "GitHub Locally Actions",
         "command": "githubLocalActions.fixPermissions",
         "title": "Fix Permissions",
         "icon": "$(unlock)"
       },
       {
-        "category": "GitHub Local Actions",
+        "category": "GitHub Locally Actions",
         "command": "githubLocalActions.runAllWorkflows",
         "title": "Run All Workflows",
         "enablement": "!githubLocalActions:noWorkflows && workspaceFolderCount > 0",
         "icon": "$(run-all)"
       },
       {
-        "category": "GitHub Local Actions",
+        "category": "GitHub Locally Actions",
         "command": "githubLocalActions.runEvent",
         "title": "Run Event",
         "enablement": "!githubLocalActions:noWorkflows && workspaceFolderCount > 0",
         "icon": "$(symbol-event)"
       },
       {
-        "category": "GitHub Local Actions",
+        "category": "GitHub Locally Actions",
         "command": "githubLocalActions.refreshWorkflows",
         "title": "Refresh",
         "icon": "$(refresh)"
       },
       {
-        "category": "GitHub Local Actions",
+        "category": "GitHub Locally Actions",
         "command": "githubLocalActions.runWorkflow",
         "title": "Run Workflow",
         "icon": "$(debug-start)"
       },
       {
-        "category": "GitHub Local Actions",
+        "category": "GitHub Locally Actions",
         "command": "githubLocalActions.runWorkflowEvent",
         "title": "Run Workflow with Event",
         "icon": "$(symbol-event)"
       },
       {
-        "category": "GitHub Local Actions",
+        "category": "GitHub Locally Actions",
         "command": "githubLocalActions.openWorkflow",
         "title": "Open Workflow",
         "icon": "$(go-to-file)"
       },
       {
-        "category": "GitHub Local Actions",
+        "category": "GitHub Locally Actions",
         "command": "githubLocalActions.runJob",
         "title": "Run Job",
         "icon": "$(debug-start)"
       },
       {
-        "category": "GitHub Local Actions",
+        "category": "GitHub Locally Actions",
         "command": "githubLocalActions.runJobEvent",
         "title": "Run Job with Event",
         "icon": "$(symbol-event)"
       },
       {
-        "category": "GitHub Local Actions",
+        "category": "GitHub Locally Actions",
         "command": "githubLocalActions.clearAll",
         "title": "Clear All",
         "enablement": "!githubLocalActions:noHistory && !githubLocalActions:isRunning && !githubLocalActions:noWorkflows && workspaceFolderCount > 0",
         "icon": "$(clear-all)"
       },
       {
-        "category": "GitHub Local Actions",
+        "category": "GitHub Locally Actions",
         "command": "githubLocalActions.refreshHistory",
         "title": "Refresh",
         "icon": "$(refresh)"
       },
       {
-        "category": "GitHub Local Actions",
+        "category": "GitHub Locally Actions",
         "command": "githubLocalActions.viewOutput",
         "title": "View Output",
         "icon": "$(book)"
       },
       {
-        "category": "GitHub Local Actions",
+        "category": "GitHub Locally Actions",
         "command": "githubLocalActions.restart",
         "title": "Restart",
         "enablement": "viewItem =~ /^githubLocalActions.history_(Success|Failed|Cancelled).*/",
         "icon": "$(debug-restart)"
       },
       {
-        "category": "GitHub Local Actions",
+        "category": "GitHub Locally Actions",
         "command": "githubLocalActions.stop",
         "title": "Stop",
         "enablement": "viewItem =~ /^githubLocalActions.history_(Running).*/",
         "icon": "$(debug-stop)"
       },
       {
-        "category": "GitHub Local Actions",
+        "category": "GitHub Locally Actions",
         "command": "githubLocalActions.remove",
         "title": "Remove",
         "enablement": "viewItem =~ /^githubLocalActions.history_(Success|Failed|Cancelled).*/",
         "icon": "$(close)"
       },
       {
-        "category": "GitHub Local Actions",
+        "category": "GitHub Locally Actions",
         "command": "githubLocalActions.focusTask",
         "title": "Focus Task"
       },
       {
-        "category": "GitHub Local Actions",
+        "category": "GitHub Locally Actions",
         "command": "githubLocalActions.refreshSettings",
         "title": "Refresh",
         "icon": "$(refresh)"
       },
       {
-        "category": "GitHub Local Actions",
+        "category": "GitHub Locally Actions",
         "command": "githubLocalActions.createSecretFile",
         "title": "Create Secret File",
         "icon": "$(file-add)"
       },
       {
-        "category": "GitHub Local Actions",
+        "category": "GitHub Locally Actions",
         "command": "githubLocalActions.locateSecretFiles",
         "title": "Locate Secret Files",
         "icon": "$(search)"
       },
       {
-        "category": "GitHub Local Actions",
+        "category": "GitHub Locally Actions",
         "command": "githubLocalActions.show",
         "title": "Show",
         "icon": "$(eye)"
       },
       {
-        "category": "GitHub Local Actions",
+        "category": "GitHub Locally Actions",
         "command": "githubLocalActions.hide",
         "title": "Hide",
         "icon": "$(eye-closed)"
       },
       {
-        "category": "GitHub Local Actions",
+        "category": "GitHub Locally Actions",
         "command": "githubLocalActions.enableGithubCLIToken",
         "title": "Enable GitHub CLI Token",
         "icon": "$(sync)"
       },
       {
-        "category": "GitHub Local Actions",
+        "category": "GitHub Locally Actions",
         "command": "githubLocalActions.disableGithubCLIToken",
         "title": "Disable GitHub CLI Token",
         "icon": "$(sync-ignored)"
       },
       {
-        "category": "GitHub Local Actions",
+        "category": "GitHub Locally Actions",
         "command": "githubLocalActions.createVariableFile",
         "title": "Create Variable File",
         "icon": "$(file-add)"
       },
       {
-        "category": "GitHub Local Actions",
+        "category": "GitHub Locally Actions",
         "command": "githubLocalActions.locateVariableFiles",
         "title": "Locate Variable Files",
         "icon": "$(search)"
       },
       {
-        "category": "GitHub Local Actions",
+        "category": "GitHub Locally Actions",
         "command": "githubLocalActions.importFromGithub",
         "title": "Import from GitHub",
         "icon": "$(github)"
       },
       {
-        "category": "GitHub Local Actions",
+        "category": "GitHub Locally Actions",
         "command": "githubLocalActions.createInputFile",
         "title": "Create Input File",
         "icon": "$(file-add)"
       },
       {
-        "category": "GitHub Local Actions",
+        "category": "GitHub Locally Actions",
         "command": "githubLocalActions.locateInputFiles",
         "title": "Locate Input Files",
         "icon": "$(search)"
       },
       {
-        "category": "GitHub Local Actions",
+        "category": "GitHub Locally Actions",
         "command": "githubLocalActions.createPayloadFile",
         "title": "Create Payload File",
         "icon": "$(file-add)"
       },
       {
-        "category": "GitHub Local Actions",
+        "category": "GitHub Locally Actions",
         "command": "githubLocalActions.locatePayloadFiles",
         "title": "Locate Payload Files",
         "icon": "$(search)"
       },
       {
-        "category": "GitHub Local Actions",
+        "category": "GitHub Locally Actions",
         "command": "githubLocalActions.addOption",
         "title": "Add Option",
         "icon": "$(add)"
       },
       {
-        "category": "GitHub Local Actions",
+        "category": "GitHub Locally Actions",
         "command": "githubLocalActions.editOption",
         "title": "Edit",
         "icon": "$(edit)"
       },
       {
-        "category": "GitHub Local Actions",
+        "category": "GitHub Locally Actions",
         "command": "githubLocalActions.openSettingFile",
         "title": "Open",
         "icon": "$(go-to-file)"
       },
       {
-        "category": "GitHub Local Actions",
+        "category": "GitHub Locally Actions",
         "command": "githubLocalActions.removeCustomSetting",
         "title": "Remove",
         "icon": "$(close)"
       },
       {
-        "category": "GitHub Local Actions",
+        "category": "GitHub Locally Actions",
         "command": "githubLocalActions.deleteSettingFile",
         "title": "Delete",
         "icon": "$(trash)"
       },
       {
-        "category": "GitHub Local Actions",
+        "category": "GitHub Locally Actions",
         "command": "githubLocalActions.editSetting",
         "title": "Edit",
         "icon": "$(edit)"
       },
       {
-        "category": "GitHub Local Actions",
+        "category": "GitHub Locally Actions",
         "command": "githubLocalActions.viewDocumentation",
         "title": "View Documentation"
       },
       {
-        "category": "GitHub Local Actions",
+        "category": "GitHub Locally Actions",
         "command": "githubLocalActions.reportAnIssue",
         "title": "Report an Issue"
+      },
+      {
+        "category": "GitHub Locally Actions",
+        "command": "githubLocalActions.addFolderToLocalProject",
+        "title": "Add to Local Project"
+      },
+      {
+        "category": "GitHub Locally Actions",
+        "command": "githubLocalActions.removeFolderFromLocalProject",
+        "title": "Remove from Local Project",
+        "icon": "$(close)"
       }
     ],
     "submenus": [
@@ -589,7 +596,7 @@
         },
         {
           "command": "githubLocalActions.clearAll",
-          "when": "view == history && workspaceFolderCount <= 1",
+          "when": "view == history && !githubLocalActions:noHistory && !githubLocalActions:isRunning",
           "group": "navigation@0"
         },
         {
@@ -641,12 +648,12 @@
         },
         {
           "command": "githubLocalActions.runAllWorkflows",
-          "when": "view == workflows && viewItem =~ /^githubLocalActions.workspaceFolderWorkflows.*/ && workspaceFolderCount > 1",
+          "when": "view == workflows && viewItem =~ /^githubLocalActions.projectDirectoryWorkflows.*/",
           "group": "inline@0"
         },
         {
           "command": "githubLocalActions.runEvent",
-          "when": "view == workflows && viewItem =~ /^githubLocalActions.workspaceFolderWorkflows.*/ && workspaceFolderCount > 1",
+          "when": "view == workflows && viewItem =~ /^githubLocalActions.projectDirectoryWorkflows.*/",
           "group": "inline@1"
         },
         {
@@ -701,7 +708,7 @@
         },
         {
           "command": "githubLocalActions.clearAll",
-          "when": "view == history && viewItem =~ /^githubLocalActions.workspaceFolderHistory.*/ && workspaceFolderCount > 1",
+          "when": "view == history && viewItem =~ /^githubLocalActions.projectDirectoryHistory.*/",
           "group": "inline@0"
         },
         {
@@ -823,11 +830,23 @@
           "command": "githubLocalActions.editSetting",
           "when": "view == settings && viewItem =~ /^githubLocalActions.(secret|variable|input|runner)(?!(File|s))(?!_(show|hide)_generate).*/",
           "group": "inline@1"
+        },
+        {
+          "command": "githubLocalActions.removeFolderFromLocalProject",
+          "when": "view == workflows && viewItem =~ /^githubLocalActions.projectDirectoryWorkflows.*/",
+          "group": "inline@2"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "githubLocalActions.addFolderToLocalProject",
+          "when": "explorerResourceIsFolder",
+          "group": "navigation@50"
         }
       ]
     },
     "configuration": {
-      "title": "GitHub Local Actions",
+      "title": "GitHub Locally Actions",
       "properties": {
         "githubLocalActions.actCommand": {
           "markdownDescription": "The base `nektos/act` command to be called. By default, this will be `act` (requires the binary to be on your `PATH`). If the binary is not on your `PATH`, the command should be fully qualified. If `act` is installed as a GitHub CLI extension, this command should be set to `gh act`.",
@@ -835,8 +854,9 @@
           "default": "act"
         },
         "githubLocalActions.projectDirectory": {
-          "markdownDescription": "The relative project directories to scan for workflows (`.github/workflows`). This supports monorepos and multi-project workspaces.",
+          "markdownDescription": "The project directories to scan for workflows (`.github/workflows`). Each entry must be relative to its workspace folder. This supports monorepos and multi-root workspaces.",
           "type": "array",
+          "scope": "resource",
           "items": {
             "type": "string"
           },
@@ -854,7 +874,7 @@
     "colors": [
       {
         "id": "GitHubLocalActions.green",
-        "description": "Color for green in the GitHub Local Actions extension",
+        "description": "Color for green in the GitHub Locally Actions extension",
         "defaults": {
           "dark": "#89d185",
           "light": "#89d185"
@@ -862,7 +882,7 @@
       },
       {
         "id": "GitHubLocalActions.red",
-        "description": "Color for red in the GitHub Local Actions extension",
+        "description": "Color for red in the GitHub Locally Actions extension",
         "defaults": {
           "dark": "#f48771",
           "light": "#f48771"
@@ -870,7 +890,7 @@
       },
       {
         "id": "GitHubLocalActions.yellow",
-        "description": "Color for yellow in the GitHub Local Actions extension",
+        "description": "Color for yellow in the GitHub Locally Actions extension",
         "defaults": {
           "dark": "#cca700",
           "light": "#cca700"
@@ -878,7 +898,7 @@
       },
       {
         "id": "GitHubLocalActions.grey",
-        "description": "Color for grey in the GitHub Local Actions extension",
+        "description": "Color for grey in the GitHub Locally Actions extension",
         "defaults": {
           "dark": "#808080",
           "light": "#808080"
@@ -886,7 +906,7 @@
       },
       {
         "id": "GitHubLocalActions.purple",
-        "description": "Color for purple in the GitHub Local Actions extension",
+        "description": "Color for purple in the GitHub Locally Actions extension",
         "defaults": {
           "dark": "#d6bcfa",
           "light": "#d6bcfa"

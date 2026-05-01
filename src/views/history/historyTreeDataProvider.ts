@@ -1,10 +1,18 @@
-import { CancellationToken, commands, EventEmitter, ExtensionContext, extensions, TreeDataProvider, TreeItem, window, workspace } from "vscode";
+import {
+    CancellationToken,
+    commands,
+    EventEmitter,
+    ExtensionContext,
+    extensions,
+    TreeDataProvider,
+    TreeItem,
+    window
+} from "vscode";
 import { act } from "../../extension";
 import { HistoryStatus } from "../../historyManager";
-import { Utils } from "../../utils";
 import { GithubLocalActionsTreeItem } from "../githubLocalActionsTreeItem";
 import HistoryTreeItem from "./history";
-import WorkspaceFolderHistoryTreeItem from "./workspaceFolderHistory";
+import ProjectDirectoryHistoryTreeItem from "./projectDirectoryHistory";
 
 export default class HistoryTreeDataProvider implements TreeDataProvider<GithubLocalActionsTreeItem> {
     private _onDidChangeTreeData = new EventEmitter<GithubLocalActionsTreeItem | undefined | null | void>();
@@ -12,15 +20,40 @@ export default class HistoryTreeDataProvider implements TreeDataProvider<GithubL
     static VIEW_ID = 'history';
 
     constructor(context: ExtensionContext) {
-        extensions.onDidChange(e => {
+        extensions.onDidChange(() => {
             this.refresh();
         });
 
         context.subscriptions.push(
-            commands.registerCommand('githubLocalActions.clearAll', async (workspaceFolderHistoryTreeItem?: WorkspaceFolderHistoryTreeItem) => {
-                const workspaceFolder = await Utils.getWorkspaceFolder(workspaceFolderHistoryTreeItem?.workspaceFolder);
-                if (workspaceFolder) {
-                    await act.historyManager.clearAll(workspaceFolder);
+            commands.registerCommand('githubLocalActions.clearAll', async (projectDirectoryHistoryTreeItem?: ProjectDirectoryHistoryTreeItem) => {
+                if (projectDirectoryHistoryTreeItem) {
+                    await act.historyManager.clearAll(projectDirectoryHistoryTreeItem.projectPath);
+                    this.refresh();
+                    return;
+                }
+
+                const workspaceHistory = await act.historyManager.getWorkspaceHistory();
+                const projectPaths = Object.keys(workspaceHistory).filter(projectPath => (workspaceHistory[projectPath] ?? []).length > 0);
+
+                if (projectPaths.length === 0) {
+                    window.showInformationMessage('No history to clear.');
+                    return;
+                }
+
+                if (projectPaths.length === 1) {
+                    await act.historyManager.clearAll(projectPaths[0]);
+                    this.refresh();
+                    return;
+                }
+
+                const selectedProjectPath = await window.showQuickPick(projectPaths, {
+                    title: 'Clear History',
+                    placeHolder: 'Select a project directory history to clear'
+                });
+
+                if (selectedProjectPath) {
+                    await act.historyManager.clearAll(selectedProjectPath);
+                    this.refresh();
                 }
             }),
             commands.registerCommand('githubLocalActions.refreshHistory', async () => {
@@ -77,37 +110,35 @@ export default class HistoryTreeDataProvider implements TreeDataProvider<GithubL
     async getChildren(element?: GithubLocalActionsTreeItem): Promise<GithubLocalActionsTreeItem[]> {
         if (element) {
             return element.getChildren();
-        } else {
-            const items: GithubLocalActionsTreeItem[] = [];
-            let isRunning: boolean = false;
-            let noHistory: boolean = true;
-
-            const workspaceFolders = workspace.workspaceFolders;
-            if (workspaceFolders) {
-                if (workspaceFolders.length === 1) {
-                    items.push(...await new WorkspaceFolderHistoryTreeItem(workspaceFolders[0]).getChildren());
-
-                    const workspaceHistory = (await act.historyManager.getWorkspaceHistory())[workspaceFolders[0].uri.fsPath] ?? [];
-                    if (workspaceHistory.length > 0) {
-                        isRunning = workspaceHistory.find(workspaceHistory => workspaceHistory.status === HistoryStatus.Running) !== undefined;
-                        noHistory = false;
-                    }
-                } else if (workspaceFolders.length > 1) {
-                    for (const workspaceFolder of workspaceFolders) {
-                        items.push(new WorkspaceFolderHistoryTreeItem(workspaceFolder));
-
-                        const workspaceHistory = (await act.historyManager.getWorkspaceHistory())[workspaceFolder.uri.fsPath] ?? [];
-                        if (workspaceHistory.length > 0) {
-                            isRunning = workspaceHistory.find(workspaceHistory => workspaceHistory.status === HistoryStatus.Running) !== undefined;
-                            noHistory = false;
-                        }
-                    }
-                }
-            }
-
-            await commands.executeCommand('setContext', 'githubLocalActions:isRunning', isRunning);
-            await commands.executeCommand('setContext', 'githubLocalActions:noHistory', noHistory);
-            return items;
         }
+
+        const workspaceHistory = await act.historyManager.getWorkspaceHistory();
+        const projectPaths = Object.keys(workspaceHistory)
+            .filter(projectPath => (workspaceHistory[projectPath] ?? []).length > 0)
+            .sort((a, b) => a.localeCompare(b));
+
+        const isRunning = projectPaths.some(projectPath =>
+            (workspaceHistory[projectPath] ?? []).some(history => history.status === HistoryStatus.Running)
+        );
+        const noHistory = projectPaths.length === 0;
+
+        await commands.executeCommand('setContext', 'githubLocalActions:isRunning', isRunning);
+        await commands.executeCommand('setContext', 'githubLocalActions:noHistory', noHistory);
+
+        if (projectPaths.length === 1) {
+            return this.getHistoryItemsForProjectPath(projectPaths[0]);
+        }
+
+        return projectPaths.map(projectPath => new ProjectDirectoryHistoryTreeItem(projectPath));
+    }
+
+    private async getHistoryItemsForProjectPath(projectPath: string): Promise<GithubLocalActionsTreeItem[]> {
+        const workspaceHistory = await act.historyManager.getWorkspaceHistory();
+        const projectHistory = workspaceHistory[projectPath] ?? [];
+
+        return projectHistory
+            .slice()
+            .reverse()
+            .map(history => new HistoryTreeItem(history.commandArgs.workflow.workspaceFolder, history));
     }
 }

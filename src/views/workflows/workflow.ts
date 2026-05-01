@@ -13,6 +13,8 @@ export default class WorkflowTreeItem extends TreeItem implements GithubLocalAct
         this.contextValue = WorkflowTreeItem.contextValue;
         this.iconPath = new ThemeIcon('layers');
         this.tooltip = `Name: ${workflow.name}\n` +
+            `Project Directory: ${workflow.projectDirectory}\n` +
+            `Project Path: ${workflow.projectPath}\n` +
             `Path: ${workflow.uri.fsPath}\n` +
             (workflow.error ? `Error: ${workflow.error}` : ``);
 
@@ -24,8 +26,8 @@ export default class WorkflowTreeItem extends TreeItem implements GithubLocalAct
 
     async getChildren(): Promise<GithubLocalActionsTreeItem[]> {
         const items: GithubLocalActionsTreeItem[] = [];
-
         const jobs = this.workflow.yaml.jobs;
+
         if (jobs) {
             for (const [key, value] of Object.entries<any>(jobs)) {
                 items.push(new JobTreeItem(this.workspaceFolder, this.workflow, { name: value.name ? value.name : key, id: key }));

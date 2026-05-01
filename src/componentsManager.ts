@@ -158,7 +158,7 @@ export class ComponentsManager {
                             definition: {
                                 type: 'Start Docker Engine'
                             },
-                            source: 'GitHub Local Actions',
+                            source: 'GitHub Locally Actions',
                             scope: TaskScope.Workspace,
                             isBackground: true,
                             presentationOptions: {
@@ -221,7 +221,7 @@ export class ComponentsManager {
                                 definition: {
                                     type: 'Fix Docker Engine Permissions'
                                 },
-                                source: 'GitHub Local Actions',
+                                source: 'GitHub Locally Actions',
                                 scope: TaskScope.Workspace,
                                 isBackground: true,
                                 presentationOptions: {
