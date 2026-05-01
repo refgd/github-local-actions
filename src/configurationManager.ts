@@ -10,7 +10,7 @@ export enum Platform {
 
 export enum Section {
     actCommand = 'actCommand',
-    workflowsDirectory = 'workflowsDirectory',
+    projectDirectory = 'projectDirectory',
     dockerDesktopPath = 'dockerDesktopPath'
 }
 
@@ -24,9 +24,9 @@ export namespace ConfigurationManager {
             await ConfigurationManager.set(Section.actCommand, Act.defaultActCommand);
         }
 
-        let workflowsDirectory = ConfigurationManager.get<string>(Section.workflowsDirectory);
-        if (!workflowsDirectory) {
-            await ConfigurationManager.set(Section.workflowsDirectory, WorkflowsManager.defaultWorkflowsDirectory);
+        let projectDirectory = ConfigurationManager.get<string[]>(Section.projectDirectory);
+        if (!projectDirectory || projectDirectory.length === 0) {
+            await ConfigurationManager.set(Section.projectDirectory, WorkflowsManager.defaultProjectDirectories);
         }
 
         let dockerDesktopPath = ConfigurationManager.get<string>(Section.dockerDesktopPath);
