@@ -61,8 +61,7 @@ export default class WorkflowsTreeDataProvider implements TreeDataProvider<Githu
                     if (activeTextEditor) {
                         const uri = activeTextEditor.document.uri;
                         const fileName = path.parse(uri.fsPath).base;
-                        const workflowsDirectory = WorkflowsManager.getWorkflowsDirectory();
-                        if (uri.path.match(`.*/${workflowsDirectory}/.*\\.(${WorkflowsManager.yamlExtension}|${WorkflowsManager.ymlExtension})`)) {
+                        if (uri.path.match(`.*/${WorkflowsManager.defaultWorkflowsDirectory}/.*\\.(${WorkflowsManager.yamlExtension}|${WorkflowsManager.ymlExtension})`)) {
                             const workspaceFolder = workspace.getWorkspaceFolder(uri);
                             if (workspaceFolder) {
                                 const workflows = await act.workflowsManager.getWorkflows(workspaceFolder);
@@ -70,7 +69,7 @@ export default class WorkflowsTreeDataProvider implements TreeDataProvider<Githu
                                 if (workflow) {
                                     await act.runWorkflow(workspaceFolder, workflow);
                                 } else {
-                                    errorMessage = `Workflow not found in workflow directory (${workflowsDirectory}).`;
+                                    errorMessage = `Workflow not found in workflow directory (${WorkflowsManager.defaultWorkflowsDirectory}).`;
                                 }
                             } else {
                                 errorMessage = `${fileName} must be opened in a workspace folder to be executed locally.`;

@@ -273,9 +273,9 @@ export class Act {
     }
 
     async runWorkflow(workspaceFolder: WorkspaceFolder, workflow: Workflow) {
-        const workflowsDirectory = WorkflowsManager.getWorkflowsDirectory();
+        const workflowsDirectory = WorkflowsManager.defaultWorkflowsDirectory;
         return await this.runCommand({
-            path: workspaceFolder.uri.fsPath,
+            path: workflow.projectPath,
             workflow: workflow,
             options: [
                 `${Option.Workflows} "${workflowsDirectory}/${path.parse(workflow.uri.fsPath).base}"`
@@ -288,9 +288,9 @@ export class Act {
     }
 
     async runJob(workspaceFolder: WorkspaceFolder, workflow: Workflow, job: Job) {
-        const workflowsDirectory = WorkflowsManager.getWorkflowsDirectory();
+        const workflowsDirectory = WorkflowsManager.defaultWorkflowsDirectory;
         return await this.runCommand({
-            path: workspaceFolder.uri.fsPath,
+            path: workflow.projectPath,
             workflow: workflow,
             options: [
                 `${Option.Workflows} "${workflowsDirectory}/${path.parse(workflow.uri.fsPath).base}"`,
@@ -306,7 +306,7 @@ export class Act {
 
     async runEvent(workspaceFolder: WorkspaceFolder, event: Event, options?: { workflow: Workflow, job?: Job }) {
         let eventExists: boolean = false;
-        const workflowsDirectory = WorkflowsManager.getWorkflowsDirectory();
+        const workflowsDirectory = WorkflowsManager.defaultWorkflowsDirectory;
 
         // If a specific workflow is provided, run the event on that workflow
         if (options) {
@@ -314,7 +314,7 @@ export class Act {
                 // If a job is also provided, run the event on that specific job
                 if (options.job) {
                     return await this.runCommand({
-                        path: workspaceFolder.uri.fsPath,
+                        path: options.workflow.projectPath,
                         workflow: options.workflow,
                         options: [
                             `${event} ${Option.Workflows} "${workflowsDirectory}/${path.parse(options.workflow.uri.fsPath).base}"`,
@@ -330,7 +330,7 @@ export class Act {
                 } else {
                     // Run the event on the entire workflow
                     return await this.runCommand({
-                        path: workspaceFolder.uri.fsPath,
+                        path: options.workflow.projectPath,
                         workflow: options.workflow,
                         options: [
                             `${event} ${Option.Workflows} "${workflowsDirectory}/${path.parse(options.workflow.uri.fsPath).base}"`
@@ -355,7 +355,7 @@ export class Act {
                 if (event in workflow.yaml.on) {
                     eventExists = true;
                     await this.runCommand({
-                        path: workspaceFolder.uri.fsPath,
+                        path: workflow.projectPath,
                         workflow: workflow,
                         options: [
                             `${event} ${Option.Workflows} "${workflowsDirectory}/${path.parse(workflow.uri.fsPath).base}"`

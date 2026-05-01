@@ -50,7 +50,7 @@ export function activate(context: ExtensionContext) {
 				componentsTreeDataProvider.refresh();
 			}
 
-			if (event.affectsConfiguration(`${ConfigurationManager.group}.${Section.workflowsDirectory}`)) {
+			if (event.affectsConfiguration(`${ConfigurationManager.group}.${Section.projectDirectory}`)) {
 				workflowsTreeDataProvider.refresh();
 				settingsTreeDataProvider.refresh();
 
@@ -79,8 +79,7 @@ export function activate(context: ExtensionContext) {
 }
 
 function setupFileWatcher(context: ExtensionContext) {
-	const workflowsDirectory = WorkflowsManager.getWorkflowsDirectory();
-	const workflowsFileWatcher = workspace.createFileSystemWatcher(`**/${workflowsDirectory}/*.{${WorkflowsManager.ymlExtension},${WorkflowsManager.yamlExtension}}`);
+	const workflowsFileWatcher = workspace.createFileSystemWatcher(`**/${WorkflowsManager.defaultWorkflowsDirectory}/*.{${WorkflowsManager.ymlExtension},${WorkflowsManager.yamlExtension}}`);
 	workflowsFileWatcher.onDidCreate(() => {
 		workflowsTreeDataProvider.refresh();
 		settingsTreeDataProvider.refresh();
